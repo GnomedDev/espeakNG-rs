@@ -15,15 +15,7 @@ fn espeak() -> Result<(), espeakng::Error> {
 #[test]
 fn mbrola() -> Result<(), espeakng::Error> {
     let mut speaker = init();
-    while let Err(err) = speaker.set_voice_raw("mb/mb-en1") {
-        if let espeakng::Error::ESpeakNg(espeak_err) = err {
-            if espeak_err == espeakng::ESpeakNgError::VoiceNotFound {
-                continue
-            } else {
-                return Err(err)
-            }
-        }
-    }
+    speaker.set_voice_raw("mb/mb-en1")?;
 
     assert_eq!(
         speaker.text_to_phonemes("Hello world", espeakng::PhonemeGenOptions::Mbrola)?.unwrap(),

@@ -11,7 +11,6 @@
 //!
 //! ## Known Issues
 //! - [`Speaker::synthesize`] seems to emit broken WAV audio data, no idea how to fix.
-//! - `espeakNG` (C) seems to have a internal bug leading to [`Speaker::set_voice_raw`] returning [`ESpeakNgError::VoiceNotFound`] randomly.
 //!
 //! ## Examples
 //! Generating phonemes from text:
@@ -55,6 +54,8 @@ pub use error::{Error, ESpeakNgError};
 pub use structs::*;
 
 use error::handle_error;
+
+use crate::utils::StringFromCPtr;
 
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -149,7 +150,7 @@ impl Speaker {
     }
 
     /// Fetch the espeak voices currently installed.
-    #[must_use] pub fn get_voices(&self) -> Vec<Voice> {
+    #[must_use] pub fn get_voices() -> Vec<Voice> {
         let mut array = unsafe {bindings::espeak_ListVoices(std::ptr::null_mut())};
         let mut buf = Vec::new();
 
@@ -176,12 +177,36 @@ impl Speaker {
     /// Set the voice for future espeak calls based on the filename
     /// 
     /// # Errors
-    /// [`ESpeakNgError::VoiceNotFound`] 
-    /// - This may randomly fail for mbrola voices due to an internal `espeakNG` bug.
-    /// 
+    /// [`ESpeakNgError::VoiceNotFound`]
     pub fn set_voice_raw(&mut self, filename: &str) -> Result<()> {
+        let mbrola_voice = filename.starts_with("mb/");
+
+        // We have to do our own VoiceNotFound check as espeakNG seems to internally fail at that.
+        if mbrola_voice {
+            let mut voice_path = Self::info().1;
+            voice_path.push(format!("voices/{}", filename));
+            if !voice_path.exists() {
+                return Err(Error::ESpeakNg(ESpeakNgError::VoiceNotFound))
+            }
+        }
+
         let name_null_term = utils::null_term(filename);
-        handle_error(unsafe {bindings::espeak_ng_SetVoiceByName(name_null_term.as_ptr())})
+        if mbrola_voice {
+            // Now we are sure the voice is set, we can loop until espeakNG shuts up.
+            while let Err(err) = handle_error(unsafe {bindings::espeak_ng_SetVoiceByName(name_null_term.as_ptr())}) {
+                if let Error::ESpeakNg(espeak_err) = err {
+                    if espeak_err == ESpeakNgError::VoiceNotFound {
+                        continue
+                    }
+                }
+
+                return Err(err)
+            };
+        } else {
+            handle_error(unsafe {bindings::espeak_ng_SetVoiceByName(name_null_term.as_ptr())})?;
+        }
+
+        Ok(())
     }
 
 
@@ -206,6 +231,21 @@ impl Speaker {
                 relative as i32
             )
         })
+    }
+
+
+    /// Get the version string and voice path of the internal C library.
+    #[must_use] pub fn info() -> (String, std::path::PathBuf) {
+        let mut c_voice_path: *const i8 = std::ptr::null();
+
+        unsafe {
+            let version_string = bindings::espeak_Info((&mut c_voice_path) as *mut *const i8);
+
+            (
+                String::from_cptr(version_string),
+                std::path::PathBuf::from(String::from_cptr(c_voice_path))
+            )
+        }
     }
 
 
@@ -274,7 +314,7 @@ impl Speaker {
     }
 
 
-    fn text_to_phonemes_standard(&self, text: &str) -> String {
+    fn text_to_phonemes_standard(&mut self, text: &str) -> String {
         let text_nul_term = utils::null_term(text);
 
         let output = unsafe {
