@@ -1,6 +1,5 @@
-fn init<'a>() -> parking_lot::MutexGuard<'a, espeakng::Speaker> {
-    espeakng::initialise(None).unwrap().lock()
-}
+mod base;
+use base::init;
 
 #[test]
 fn get_voice() -> espeakng::Result<()> {

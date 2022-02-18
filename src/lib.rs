@@ -49,10 +49,11 @@ pub use espeakng_sys as bindings;
 
 mod error;
 mod utils;
+mod structs;
 
 pub use error::{Error, ESpeakNgError};
+pub use structs::*;
 
-use utils::StringFromCPtr;
 use error::handle_error;
 
 
@@ -74,54 +75,6 @@ pub fn initialise(voice_path: Option<&str>) -> Result<&'static Mutex<Speaker>> {
 /// Gets the currently initialised [Speaker]. If not set, none is returned.
 pub fn get() -> Option<&'static Mutex<Speaker>> {
     SPEAKER.get()
-}
-
-#[derive(Clone, Copy)]
-pub enum PhonemeGenOptions<'a> {
-    /// Generate phonemes using the standard espeak style
-    Standard,
-    /// Generate phonemes using the mbrola style
-    Mbrola,
-    /// Generate phonemes using the mbrola style and write them in a file
-    MbrolaFile(&'a dyn AsRawFd)
-}
-
-
-#[derive(Debug, PartialEq, Eq, Copy, Clone, strum_macros::FromRepr)]
-#[repr(u8)]
-pub enum Gender {
-    Male = 1,
-    Female = 2
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Language {
-    pub name: String,
-    pub priority: i8,
-}
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-#[non_exhaustive] // Keep Voice private constructable to keep set_voice safe.
-pub struct Voice {
-    pub name: String,
-    pub filename: String,
-    pub languages: Vec<Language>,
-    pub gender: Option<Gender>,
-    pub age: u8,
-}
-
-impl From<bindings::espeak_VOICE> for Voice {
-    fn from(voice: bindings::espeak_VOICE) -> Self {
-        unsafe {
-            Self {
-                age: voice.age,
-                name: String::from_cptr(voice.name),
-                filename: String::from_cptr(voice.identifier),
-                gender: Gender::from_repr(voice.gender),
-                languages: utils::parse_lang_array(voice.languages)
-            }
-        }
-    }
 }
 
 
@@ -229,6 +182,30 @@ impl Speaker {
     pub fn set_voice_raw(&mut self, filename: &str) -> Result<()> {
         let name_null_term = utils::null_term(filename);
         handle_error(unsafe {bindings::espeak_ng_SetVoiceByName(name_null_term.as_ptr())})
+    }
+
+
+    /// Get the value of either the currently set or default value of a settings parameter.
+    pub fn get_parameter(&mut self, param: Parameter, default: bool) -> i32 {
+        unsafe {bindings::espeak_GetParameter(
+            param as u32,
+            !default as i32
+        )}
+    }
+
+    /// Set a settings parameter for future espeak calls.
+    /// 
+    /// # Errors
+    /// - If a value out of range of the parameter is passed.
+    /// - If the internal C call fails.
+    pub fn set_parameter(&mut self, param: Parameter, new_value: i32, relative: bool) -> Result<()> {
+        handle_error(unsafe {
+            bindings::espeak_ng_SetParameter(
+                param as u32,
+                new_value,
+                relative as i32
+            )
+        })
     }
 
 

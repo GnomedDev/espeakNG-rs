@@ -1,8 +1,6 @@
 //! Tests for espeakng::Speaker::text_to_phonemes
-
-fn init<'a>() -> parking_lot::MutexGuard<'a, espeakng::Speaker> {
-    espeakng::initialise(None).unwrap().lock()
-}
+mod base;
+use base::init;
 
 #[test]
 fn espeak() -> Result<(), espeakng::Error> {
