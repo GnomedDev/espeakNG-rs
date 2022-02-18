@@ -99,7 +99,6 @@ pub(crate) fn handle_error(ret_code: u32) -> Result<(), Error> {
     if ret_code == 0 {
         Ok(())
     } else {
-        dbg!(ret_code);
         Err (
             match ESpeakNgError::from_repr(ret_code) {
                 Some(err) => Error::ESpeakNg(err),
