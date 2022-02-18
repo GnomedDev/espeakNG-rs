@@ -15,6 +15,7 @@ pub enum Error {
     Other(Box<dyn std::error::Error>),
 }
 
+impl std::error::Error for Error {}
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(
@@ -29,26 +30,25 @@ impl std::fmt::Display for Error {
     }
 }
 
-
-impl<E> From<E> for Error
-where E: Into<Box<dyn std::error::Error + Send + Sync>> {
-    fn from(e: E) -> Self {
-        let mut err: Box<dyn std::error::Error> = e.into();
-
-        macro_rules! generate_err {
-            ($cause:ty, $result:expr) => {
-                err = match err.downcast::<$cause>() {
-                    Ok(err) => return $result(*err),
-                    Err(e) => e
-                };
-            }
-        }
-
-        generate_err!(ESpeakNgError, Self::ESpeakNg);
-
-        Self::Other(err)
+impl From<ESpeakNgError> for Error {
+    fn from(err: ESpeakNgError) -> Self {
+        Self::ESpeakNg(err)
     }
 }
+
+macro_rules! generate_unknown_err {
+    ($cause:ty) => {
+        impl From<$cause> for Error {
+            fn from(err: $cause) -> Self {
+                Self::Other(Box::new(err))
+            }
+        }
+    }
+}
+
+generate_unknown_err!(std::io::Error);
+generate_unknown_err!(std::string::FromUtf8Error);
+
 
 /// An error from the `espeakNG` C library.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, strum_macros::FromRepr)]
