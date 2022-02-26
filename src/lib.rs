@@ -214,7 +214,7 @@ impl Speaker {
     pub fn get_parameter(&mut self, param: Parameter, default: bool) -> i32 {
         unsafe {bindings::espeak_GetParameter(
             param as u32,
-            !default as i32
+            i32::from(!default)
         )}
     }
 
@@ -228,7 +228,7 @@ impl Speaker {
             bindings::espeak_ng_SetParameter(
                 param as u32,
                 new_value,
-                relative as i32
+                i32::from(relative)
             )
         })
     }

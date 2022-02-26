@@ -12,7 +12,7 @@ pub enum Error {
     /// Occured non-espeakng C function, errno is contained if populated.
     OtherC(Option<errno::Errno>),
     /// Occured in an unknown Rust location, usually a library bug.
-    Other(Box<dyn std::error::Error>),
+    Other(Box<dyn std::error::Error + Send + Sync>),
 }
 
 impl std::error::Error for Error {}
