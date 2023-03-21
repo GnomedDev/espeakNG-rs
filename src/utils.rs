@@ -1,13 +1,13 @@
 use std::ffi::CStr;
 
-pub(crate) fn null_term(s: &str) -> Vec<i8> {
-    let mut nul_term_s: Vec<i8> = Vec::with_capacity(s.len());
-    nul_term_s.extend(s.as_bytes().iter().map(|i| *i as i8));
+pub(crate) fn null_term(s: &str) -> Vec<libc::c_char> {
+    let mut nul_term_s: Vec<libc::c_char> = Vec::with_capacity(s.len());
+    nul_term_s.extend(s.as_bytes().iter().map(|i| *i as libc::c_char));
     nul_term_s.push(0);
     nul_term_s 
 }
 
-pub(crate) unsafe fn parse_lang_array(ptr: *const i8) -> Vec<crate::Language> {
+pub(crate) unsafe fn parse_lang_array(ptr: *const libc::c_char) -> Vec<crate::Language> {
     let mut languages = Vec::new();
     let mut ptr = ptr;
 
@@ -29,20 +29,21 @@ pub(crate) unsafe fn parse_lang_array(ptr: *const i8) -> Vec<crate::Language> {
             (name, priority)
         };
 
+        #[allow(clippy::unnecessary_cast)]
         languages.push(crate::Language {
             name: String::from_utf8(Vec::from(name)).unwrap(),
-            priority
+            priority: priority as i8
         });
     }
     languages
 }
 
 pub(crate) trait StringFromCPtr {
-    unsafe fn from_cptr(ptr: *const i8) -> Self;
+    unsafe fn from_cptr(ptr: *const libc::c_char) -> Self;
 }
 
 impl StringFromCPtr for String {
-    unsafe fn from_cptr(ptr: *const i8) -> Self {
+    unsafe fn from_cptr(ptr: *const libc::c_char) -> Self {
         unsafe {CStr::from_ptr(ptr)}.to_string_lossy().into_owned()
     }
 }

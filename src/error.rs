@@ -1,5 +1,3 @@
-use std::os::raw::c_char;
-
 /// An error from this library.
 #[derive(Debug)]
 pub enum Error {
@@ -21,10 +19,10 @@ impl std::fmt::Display for Error {
         f.write_str(
             &match self {
                 Self::MbrolaWithoutMbrolaVoice => String::from("eSpeak cannot generate mbrola phonemes without an mbrola voice set!"),
-                Self::ESpeakNg(err) => format!("Failed to execute an internal espeakNG function: {:?}", err),
+                Self::ESpeakNg(err) => format!("Failed to execute an internal espeakNG function: {err:?}"),
                 Self::AlreadyInit => String::from("espeakng::initialise was called after already having been called!"),
-                Self::OtherC(err) => format!("Failed to execute an internal C function: {:?}", err),
-                Self::Other(err) => format!("An internal error occurred: {:?}", err),
+                Self::OtherC(err) => format!("Failed to execute an internal C function: {err:?}"),
+                Self::Other(err) => format!("An internal error occurred: {err:?}"),
             }
         )
     }
@@ -77,7 +75,7 @@ impl std::error::Error for ESpeakNgError {}
 impl std::fmt::Display for ESpeakNgError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         const BUFFER_LEN: usize = 512;
-        let mut buffer: [c_char; BUFFER_LEN] = [0; BUFFER_LEN];
+        let mut buffer: [libc::c_char; BUFFER_LEN] = [0; BUFFER_LEN];
 
         // SAFETY: The size of the buffer is from internal to espeakNG
         // if this isn't long enough, internal functions to espeakNG break.

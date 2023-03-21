@@ -32,6 +32,7 @@
 #![allow(
     clippy::cast_sign_loss, clippy::cast_possible_wrap, // Simple `as` conversions that will not fail.
     clippy::unused_self, // Speaker needs to take self to keep thread safe.
+    unused_unsafe // Unsafe is unused in zstr
 )]
 
 use std::{
@@ -116,7 +117,7 @@ impl Speaker {
             }) {
                 Ok(ret) => ret,
                 Err(err) => {
-                    eprintln!("Panic during Rust -> C -> Rust callback: {:?}", err);
+                    eprintln!("Panic during Rust -> C -> Rust callback: {err:?}");
                     std::process::abort()
                 }
             }
@@ -184,7 +185,7 @@ impl Speaker {
         // We have to do our own VoiceNotFound check as espeakNG seems to internally fail at that.
         if mbrola_voice {
             let mut voice_path = Self::info().1;
-            voice_path.push(format!("voices/{}", filename));
+            voice_path.push(format!("voices/{filename}"));
             if !voice_path.exists() {
                 return Err(Error::ESpeakNg(ESpeakNgError::VoiceNotFound))
             }
@@ -236,10 +237,10 @@ impl Speaker {
 
     /// Get the version string and voice path of the internal C library.
     #[must_use] pub fn info() -> (String, std::path::PathBuf) {
-        let mut c_voice_path: *const i8 = std::ptr::null();
+        let mut c_voice_path: *const libc::c_char = std::ptr::null();
 
         unsafe {
-            let version_string = bindings::espeak_Info((&mut c_voice_path) as *mut *const i8);
+            let version_string = bindings::espeak_Info(std::ptr::addr_of_mut!(c_voice_path));
 
             (
                 String::from_cptr(version_string),
