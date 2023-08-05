@@ -10,15 +10,14 @@ pub enum PhonemeGenOptions<'a> {
     /// Generate phonemes using the mbrola style
     Mbrola,
     /// Generate phonemes using the mbrola style and write them in a file
-    MbrolaFile(&'a dyn AsRawFd)
+    MbrolaFile(&'a dyn AsRawFd),
 }
-
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone, strum_macros::FromRepr)]
 #[repr(u8)]
 pub enum Gender {
     Male = 1,
-    Female = 2
+    Female = 2,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -45,12 +44,11 @@ impl From<bindings::espeak_VOICE> for Voice {
                 name: String::from_cptr(voice.name),
                 filename: String::from_cptr(voice.identifier),
                 gender: Gender::from_repr(voice.gender),
-                languages: utils::parse_lang_array(voice.languages)
+                languages: utils::parse_lang_array(voice.languages),
             }
         }
     }
 }
-
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(u32)]
@@ -71,7 +69,7 @@ pub enum Parameter {
     /// - 2 = spelling
     /// - 3 or higher, by raising pitch. The value is the amount of Hz by which the pitch of each capitalised word is raised.
     Capitals = 6,
-    /// The units of how long to pause between words. At default speed, this is units of of 10mS.  
+    /// The units of how long to pause between words. At default speed, this is units of of 10mS.
     Wordgap = 7,
 }
 

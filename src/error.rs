@@ -16,15 +16,19 @@ pub enum Error {
 impl std::error::Error for Error {}
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(
-            &match self {
-                Self::MbrolaWithoutMbrolaVoice => String::from("eSpeak cannot generate mbrola phonemes without an mbrola voice set!"),
-                Self::ESpeakNg(err) => format!("Failed to execute an internal espeakNG function: {err:?}"),
-                Self::AlreadyInit => String::from("espeakng::initialise was called after already having been called!"),
-                Self::OtherC(err) => format!("Failed to execute an internal C function: {err:?}"),
-                Self::Other(err) => format!("An internal error occurred: {err:?}"),
+        f.write_str(&match self {
+            Self::MbrolaWithoutMbrolaVoice => {
+                String::from("eSpeak cannot generate mbrola phonemes without an mbrola voice set!")
             }
-        )
+            Self::ESpeakNg(err) => {
+                format!("Failed to execute an internal espeakNG function: {err:?}")
+            }
+            Self::AlreadyInit => {
+                String::from("espeakng::initialise was called after already having been called!")
+            }
+            Self::OtherC(err) => format!("Failed to execute an internal C function: {err:?}"),
+            Self::Other(err) => format!("An internal error occurred: {err:?}"),
+        })
     }
 }
 
@@ -41,17 +45,17 @@ macro_rules! generate_unknown_err {
                 Self::Other(Box::new(err))
             }
         }
-    }
+    };
 }
 
 generate_unknown_err!(std::io::Error);
 generate_unknown_err!(std::string::FromUtf8Error);
 
-
 /// An error from the `espeakNG` C library.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, strum_macros::FromRepr)]
 #[allow(clippy::module_name_repetitions)]
 #[repr(u32)]
+#[rustfmt::skip]
 pub enum ESpeakNgError {
     CompileError              = 0x1000_01FF,
     VersionMismatch           = 0x1000_02FF,
@@ -83,7 +87,7 @@ impl std::fmt::Display for ESpeakNgError {
             crate::bindings::espeak_ng_GetStatusCodeMessage(
                 *self as u32,
                 buffer.as_mut_ptr(),
-                BUFFER_LEN as u64
+                BUFFER_LEN as u64,
             );
 
             std::ffi::CStr::from_ptr(buffer.as_ptr())
@@ -97,11 +101,9 @@ pub(crate) fn handle_error(ret_code: u32) -> Result<(), Error> {
     if ret_code == 0 {
         Ok(())
     } else {
-        Err (
-            match ESpeakNgError::from_repr(ret_code) {
-                Some(err) => Error::ESpeakNg(err),
-                None => Error::OtherC(Some(errno::errno()))
-            }
-        )
-    } 
+        Err(match ESpeakNgError::from_repr(ret_code) {
+            Some(err) => Error::ESpeakNg(err),
+            None => Error::OtherC(Some(errno::errno())),
+        })
+    }
 }
