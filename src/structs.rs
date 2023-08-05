@@ -1,16 +1,41 @@
 use std::os::unix::prelude::AsRawFd;
 
+use bitflags::bitflags;
+
 use crate::utils::StringFromCPtr;
 use crate::{bindings, utils};
 
 #[derive(Clone, Copy)]
 pub enum PhonemeGenOptions<'a> {
     /// Generate phonemes using the standard espeak style
-    Standard,
+    Standard {
+        text_mode: TextMode,
+        phoneme_mode: PhonemeMode,
+    },
     /// Generate phonemes using the mbrola style
     Mbrola,
     /// Generate phonemes using the mbrola style and write them in a file
     MbrolaFile(&'a dyn AsRawFd),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u32)]
+/// Type of character codes
+pub enum TextMode {
+    /// UTF8 encoding
+    Utf8 = 1,
+}
+
+bitflags! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub struct PhonemeMode: u32 {
+        /// include ties (U+361) for phoneme names of more than one letter.
+        const IncludeTies = 1;
+        /// include zero-width-joiner for phoneme names of more than one letter.
+        const IncludeZeroWidthJoiners = 2;
+        /// separate phonemes with underscore characters.
+        const SeparateWithUnderscores = 4;
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone, strum_macros::FromRepr)]
