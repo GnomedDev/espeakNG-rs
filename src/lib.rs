@@ -146,13 +146,15 @@ impl Speaker {
     }
 
     /// Fetch and clone the currently set voice.
+    ///
+    /// # Panics
+    /// Panics if espeak-ng has somehow had the current voice reset, which should not happen.
     #[must_use]
     pub fn get_current_voice(&self) -> Voice {
-        unsafe {
-            std::ptr::NonNull::new(bindings::espeak_GetCurrentVoice())
-                .map(|ptr| Voice::from(*ptr.as_ptr()))
-                .expect("Voice has somehow been unset!")
-        }
+        let voice_ptr = unsafe { bindings::espeak_GetCurrentVoice() };
+        assert!(!voice_ptr.is_null(), "voice should not be null");
+
+        Voice::from(unsafe { *voice_ptr })
     }
 
     /// Fetch the espeak voices currently installed.
