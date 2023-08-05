@@ -324,21 +324,33 @@ impl Speaker {
         };
 
         match option {
-            PhonemeGenOptions::Standard => Ok(Some(self.text_to_phonemes_standard(text))),
+            PhonemeGenOptions::Standard {
+                text_mode,
+                phoneme_mode,
+            } => Ok(Some(self.text_to_phonemes_standard(
+                text,
+                text_mode,
+                phoneme_mode,
+            ))),
             PhonemeGenOptions::Mbrola | PhonemeGenOptions::MbrolaFile(_) => {
                 self.text_to_phonemes_mbrola(text, file)
             }
         }
     }
 
-    fn text_to_phonemes_standard(&mut self, text: &str) -> String {
+    fn text_to_phonemes_standard(
+        &mut self,
+        text: &str,
+        text_mode: TextMode,
+        phoneme_mode: PhonemeMode,
+    ) -> String {
         let text_nul_term = utils::null_term(text);
 
         let output = unsafe {
             CStr::from_ptr(bindings::espeak_TextToPhonemes(
                 &mut text_nul_term.as_ptr().cast() as *mut *const std::ffi::c_void,
-                bindings::espeakCHARS_UTF8 as i32,
-                0,
+                text_mode as i32,
+                phoneme_mode.bits() as i32,
             ))
         };
 
