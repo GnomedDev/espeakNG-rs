@@ -18,16 +18,17 @@ pub enum PhonemeGenOptions<'a> {
     MbrolaFile(&'a dyn AsRawFd),
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[repr(u32)]
 /// Type of character codes
 pub enum TextMode {
     /// UTF8 encoding
+    #[default]
     Utf8 = 1,
 }
 
 bitflags! {
-    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
     pub struct PhonemeMode: u32 {
         /// include ties (U+361) for phoneme names of more than one letter.
         const IncludeTies = 1;

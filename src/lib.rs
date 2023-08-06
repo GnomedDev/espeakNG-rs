@@ -20,7 +20,10 @@
 //!     let mut speaker = espeakng::initialise(None)?.lock();
 //!
 //!     // Generate the phonemes in standard mode.
-//!     let phonemes = speaker.text_to_phonemes("Hello World", espeakng::PhonemeGenOptions::Standard)?.unwrap();
+//!     let phonemes = speaker.text_to_phonemes("Hello World", espeakng::PhonemeGenOptions::Standard {
+//!         phoneme_mode: espeakng::PhonemeMode::default(),
+//!         text_mode: espeakng::TextMode::default(),
+//!     })?.unwrap();
 //!     println!("Phonemes: {}", phonemes);
 //!
 //!     Ok(())
