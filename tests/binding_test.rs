@@ -36,7 +36,7 @@ fn binding_check() -> Result<(), Box<dyn std::error::Error>> {
 
         bindings::espeak_ng_Synthesize(
             hello_world.as_ptr() as *const c_void,
-            hello_world.to_bytes_with_nul().len() as u64,
+            hello_world.to_bytes_with_nul().len(),
             0,
             bindings::espeak_POSITION_TYPE_POS_CHARACTER,
             0,

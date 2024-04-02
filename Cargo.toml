@@ -10,7 +10,7 @@ repository = "https://github.com/GnomedDev/espeakNG-rs"
 
 [dependencies]
 zstr = "0.1"
-espeakng-sys = "0.1"
+espeakng-sys = "0.2"
 libc = "0.2"
 errno = "0.3"
 strum_macros = "0.25"

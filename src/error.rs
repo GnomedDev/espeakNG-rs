@@ -87,7 +87,7 @@ impl std::fmt::Display for ESpeakNgError {
             crate::bindings::espeak_ng_GetStatusCodeMessage(
                 *self as u32,
                 buffer.as_mut_ptr(),
-                BUFFER_LEN as u64,
+                BUFFER_LEN,
             );
 
             std::ffi::CStr::from_ptr(buffer.as_ptr())
