@@ -46,7 +46,6 @@ use std::{
 
 use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
-use zstr::zstr;
 
 pub use espeakng_sys as bindings;
 
@@ -372,12 +371,12 @@ impl Speaker {
         // If file is not passed, generate a fake FD to store the data in
         let raw_file_fd = match file {
             Some(file) => file.as_raw_fd(),
-            None => unsafe { libc::memfd_create(zstr!("").as_ptr(), 0) },
+            None => unsafe { libc::memfd_create(c"".as_ptr(), 0) },
         };
 
         // Generate fake C File from this FD
         let raw_file = unsafe {
-            let raw_file_ptr = bindings::fdopen(raw_file_fd, zstr!("w+").as_ptr());
+            let raw_file_ptr = bindings::fdopen(raw_file_fd, c"w+".as_ptr());
             std::ptr::NonNull::new(raw_file_ptr)
                 .ok_or_else(|| Error::OtherC(Some(errno::errno())))?
         };
