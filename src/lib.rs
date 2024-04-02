@@ -30,11 +30,10 @@
 //! }
 //! ```
 #![warn(unsafe_op_in_unsafe_fn)]
-#![warn(clippy::pedantic)]
+#![warn(clippy::pedantic, rust_2018_idioms)]
 #![allow(
     clippy::cast_sign_loss, clippy::cast_possible_wrap, // Simple `as` conversions that will not fail.
     clippy::unused_self, // Speaker needs to take self to keep thread safe.
-    unused_unsafe // Unsafe is unused in zstr
 )]
 
 use std::{
@@ -91,7 +90,7 @@ impl Speaker {
             sample_count: i32,
             events: *mut bindings::espeak_EVENT,
         ) -> i32 {
-            match std::panic::catch_unwind(|| {
+            let panic_res = std::panic::catch_unwind(|| {
                 if wav.is_null() || sample_count == 0 {
                     return 0;
                 }
@@ -119,13 +118,12 @@ impl Speaker {
                 }
 
                 0
-            }) {
-                Ok(ret) => ret,
-                Err(err) => {
-                    eprintln!("Panic during Rust -> C -> Rust callback: {err:?}");
-                    std::process::abort()
-                }
-            }
+            });
+
+            panic_res.unwrap_or_else(|err| {
+                eprintln!("Panic during Rust -> C -> Rust callback: {err:?}");
+                std::process::abort()
+            })
         }
 
         let voice_path = voice_path.map(utils::null_term);
@@ -318,7 +316,7 @@ impl Speaker {
     pub fn text_to_phonemes(
         &mut self,
         text: &str,
-        option: PhonemeGenOptions,
+        option: PhonemeGenOptions<'_>,
     ) -> Result<Option<String>> {
         let file = match option {
             PhonemeGenOptions::MbrolaFile(file) => Some(file),
@@ -418,7 +416,7 @@ impl Speaker {
             // Data has been written to the file passed in, close the C version of the file.
             unsafe { bindings::fclose(raw_file.as_ptr()) };
             // Now handle possible errors, and if successful get rid of any return value.
-            result.map(|_| None)
+            result.map(|()| None)
         }
     }
 }
