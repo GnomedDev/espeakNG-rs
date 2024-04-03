@@ -41,10 +41,8 @@ use std::{
     io::{Read, Write},
     marker::PhantomData,
     os::unix::prelude::{AsRawFd, FromRawFd},
+    sync::{Mutex, OnceLock},
 };
-
-use once_cell::sync::OnceCell;
-use parking_lot::Mutex;
 
 pub use espeakng_sys as bindings;
 
@@ -62,14 +60,14 @@ use crate::utils::StringFromCPtr;
 pub type Result<T> = std::result::Result<T, Error>;
 type AudioBuffer = Mutex<Vec<i16>>;
 
-static SPEAKER: OnceCell<Mutex<Speaker>> = OnceCell::new();
+static SPEAKER: OnceLock<Mutex<Speaker>> = OnceLock::new();
 
 /// Initialise the internal espeak-ng library. If already initialised, that [Speaker] is returned.
 ///
 /// # Errors
 /// If any initialisation steps fail, such as initialising `espeakNG` and setting the default voice.
 pub fn initialise(voice_path: Option<&str>) -> Result<&'static Mutex<Speaker>> {
-    SPEAKER.get_or_try_init(|| Speaker::initialise(voice_path).map(Mutex::new))
+    SPEAKER.get_or_init(|| Speaker::initialise(voice_path).map(Mutex::new))
 }
 
 /// Gets the currently initialised [Speaker]. If not set, none is returned.
